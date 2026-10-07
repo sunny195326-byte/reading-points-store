@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - 小书虫商店</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            color: #333;
+            font-size: 1.8em;
+        }
+
+        header .subtitle-en {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .back-link {
+            color: #667eea;
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            border-radius: 25px;
+            transition: all 0.3s;
+        }
+
+        .back-link:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            color: #333;
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .orders-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .orders-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .orders-header h2 {
+            color: #333;
+            font-size: 1.5em;
+        }
+
+        .clear-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+
+        .clear-btn:hover {
+            background: #cc0000;
+        }
+
+        .orders-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .order-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            transition: border-color 0.3s;
+        }
+
+        .order-card:hover {
+            border-color: #667eea;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .order-student {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .order-class {
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .order-time {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .order-details {
+            display: flex;
+            gap: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .order-gift {
+            flex: 1;
+        }
+
+        .order-gift-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .order-variant {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .order-points {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+        }
+
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .empty-state-text {
+            font-size: 1.2em;
+        }
+
+        .stock-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .stock-section h2 {
+            color: #333;
+            font-size: 1.5em;
+            margin-bottom: 25px;
+        }
+
+        .stock-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .stock-item {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .stock-item-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .stock-item-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stock-input {
+            width: 80px;
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            text-align: center;
+        }
+
+        .stock-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .stock-save-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .stock-save-btn:hover {
+            background: #5568d3;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+
+        .status-pending {
+            background: #ff9800;
+            color: white;
+        }
+
+        .status-delivered {
+            background: #4caf50;
+            color: white;
+        }
+
+        .status-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: background 0.3s;
+            margin-left: 10px;
+        }
+
+        .status-btn:hover {
+            background: #5568d3;
+        }
+
+        .filter-btns {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9em;
+        }
+
+        .filter-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="loginScreen">
+        <div style="max-width:400px;margin:100px auto;background:white;padding:40px;border-radius:15px;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+            <h2 style="text-align:center;margin-bottom:30px;">🔐 管理员登录<br><span style="font-size:0.7em;color:#888;font-weight:normal">Admin Login</span></h2>
+            <div class="form-group" style="margin-bottom:20px;">
+                <label>密码 Password</label>
+                <input type="password" id="adminPassword" placeholder="请输入密码" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:1em;">
+            </div>
+            <button onclick="adminLogin()" style="width:100%;padding:15px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;border-radius:10px;font-size:1.1em;font-weight:bold;cursor:pointer;">登录 Login</button>
+            <div id="loginError" style="display:none;color:#f44336;text-align:center;margin-top:15px;">密码错误，请重试<br><span style="font-size:0.85em">Wrong password, please try again</span></div>
+        </div>
+    </div>
+
+    <div class="container" id="adminContent" style="display:none;">
+        <header>
+            <div>
+                <h1>🔐 管理后台</h1>
+                <div class="subtitle-en">Admin Dashboard</div>
+            </div>
+            <div style="display:flex;gap:10px;">
+                <a href="index.html" class="back-link">← 返回商店 Back to Store</a>
+                <button onclick="adminLogout()" class="back-link" style="cursor:pointer;background:none;">登出 Logout</button>
+            </div>
+        </header>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">总订单数 <span style="font-size:0.85em">Total Orders</span></div>
+                <div class="stat-value" id="totalOrders">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">总兑换积分 <span style="font-size:0.85em">Total Points</span></div>
+                <div class="stat-value" id="totalPoints">0</div>
+            </div>
+        </div>
+
+        <div class="stock-section">
+            <h2>📦 库存管理 <span style="font-size:0.7em;color:#888;font-weight:normal">Inventory Management</span></h2>
+            <div class="stock-list" id="stockList"></div>
+        </div>
+
+        <div class="orders-section">
+            <div class="orders-header">
+                <h2>订单列表 <span style="font-size:0.7em;color:#888;font-weight:normal">Order List</span></h2>
+                <button class="clear-btn" onclick="clearOrders()">清空所有订单 Clear All</button>
+            </div>
+            <div class="filter-btns">
+                <button class="filter-btn active" onclick="filterOrders('all', this)">全部 All</button>
+                <button class="filter-btn" onclick="filterOrders('pending', this)">待分发 Pending</button>
+                <button class="filter-btn" onclick="filterOrders('delivered', this)">已分发 Delivered</button>
+            </div>
+            <div class="orders-list" id="ordersList"></div>
+        </div>
+    </div>
+
+    <script>
+        // Admin password (you can change this)
+        const ADMIN_PASSWORD = 'teacher123';
+
+        // Check if already logged in
+        if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('adminContent').style.display = 'block';
+            initAdmin();
+        }
+
+        function adminLogin() {
+            const password = document.getElementById('adminPassword').value;
+            if (password === ADMIN_PASSWORD) {
+                sessionStorage.setItem('adminLoggedIn', 'true');
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('adminContent').style.display = 'block';
+                document.getElementById('loginError').style.display = 'none';
+                initAdmin();
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+            }
+        }
+
+        function adminLogout() {
+            sessionStorage.removeItem('adminLoggedIn');
+            location.reload();
+        }
+
+        // Enter key to login
+        document.getElementById('adminPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                adminLogin();
+            }
+        });
+
+        function initAdmin() {
+            renderStock();
+            renderOrders();
+        }
+
+        // Gift data (same as index.html)
+        const gifts = [
+            { id: 16, name: '贴纸（2张）',             nameEn: 'Sticker (2 pcs)',                         points: 1,  stock: 50 },
+            { id: 5,  name: 'Deli铅笔（一支）',         nameEn: 'Deli Pencil (1 pc)',                     points: 2,  stock: 9 },
+            { id: 15, name: '动物橡皮（一块）',         nameEn: 'Animal Eraser (1 pc)',                   points: 2,  stock: 40 },
+            { id: 14, name: '花样铅笔（一支）',         nameEn: 'Fancy Pencil (1 pc)',                    points: 3,  stock: 70 },
+            { id: 17, name: '方形橡皮',                 nameEn: 'Square Eraser',                          points: 3,  stock: 10 },
+            { id: 18, name: '钥匙扣',                   nameEn: 'Keychain',                               points: 3,  stock: 13 },
+            { id: 13, name: '独角兽圆珠笔（一支）',     nameEn: 'Unicorn Ballpoint Pen (1 pc)',           points: 4,  stock: 46 },
+            { id: 7,  name: '鲁班锁（球）一个',         nameEn: 'Puzzle Ball (1 pc)',                     points: 5,  stock: 9 },
+            { id: 6,  name: '陀螺（一个）',             nameEn: 'Spinning Top (1 pc)',                    points: 5,  stock: 5 },
+            { id: 10, name: '文件夹',                   nameEn: 'File Folder',                            points: 5,  stock: 31 },
+            { id: 2,  name: '盲袋（一个）',             nameEn: 'Mystery Bag (1 pc)',                     points: 5,  stock: 30 },
+            { id: 11, name: '笔记本+钥匙扣（一套）',    nameEn: 'Notebook + Keychain Set',                points: 5,  stock: 15 },
+            { id: 12, name: '笔记本+尺+刮画纸（一套）', nameEn: 'Notebook + Ruler + Scratch Paper Set',   points: 5,  stock: 4 },
+            { id: 1,  name: '绘画本（一本）',           nameEn: 'Drawing Book (1 pc)',                    points: 8,  stock: 8 },
+            { id: 4,  name: '笔袋A6',                   nameEn: 'Pencil Case A6',                         points: 10, stock: 4 },
+            { id: 8,  name: '小拉布布娃娃（一个）',     nameEn: 'Mini Labubu (1 pc)',                     points: 10, stock: 10 },
+            { id: 3,  name: '笔袋A5',                   nameEn: 'Pencil Case A5',                         points: 12, stock: 5 },
+            { id: 9,  name: '扇子',                     nameEn: 'Fan',                                    points: 20, stock: 14 }
+        ];
+
+        function renderStock() {
+            const stockList = document.getElementById('stockList');
+            const giftsStorage = JSON.parse(localStorage.getItem('gifts') || '[]');
+            
+            // Load current stock
+            giftsStorage.forEach(stored => {
+                const gift = gifts.find(g => g.id === stored.id);
+                if (gift) {
+                    gift.stock = stored.stock;
+                }
+            });
+            
+            stockList.innerHTML = gifts.map(gift => `
+                <div class="stock-item">
+                    <div class="stock-item-name">${gift.name} <span style="font-size:0.75em;color:#888;font-weight:normal">${gift.nameEn}</span></div>
+                    <div class="stock-item-control">
+                        <input type="number" class="stock-input" id="stock-${gift.id}" 
+                               value="${gift.stock}" min="0">
+                        <button class="stock-save-btn" onclick="saveStock(${gift.id})">保存 Save</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function saveStock(giftId) {
+            const input = document.getElementById(`stock-${giftId}`);
+            const newStock = parseInt(input.value) || 0;
+            
+            const gift = gifts.find(g => g.id === giftId);
+            if (gift) {
+                gift.stock = newStock;
+            }
+            
+            // Save to localStorage
+            const giftsStorage = JSON.parse(localStorage.getItem('gifts') || '[]');
+            const giftIndex = giftsStorage.findIndex(g => g.id === giftId);
+            if (giftIndex >= 0) {
+                giftsStorage[giftIndex].stock = newStock;
+            } else {
+                giftsStorage.push({id: giftId, stock: newStock});
+            }
+            localStorage.setItem('gifts', JSON.stringify(giftsStorage));
+            
+            alert('库存已更新 / Stock updated');
+        }
+
+        let currentFilter = 'all';
+
+        function filterOrders(filter, btn) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderOrders();
+        }
+
+        function toggleDeliveryStatus(orderIndex) {
+            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+            if (orders[orderIndex]) {
+                orders[orderIndex].delivered = !orders[orderIndex].delivered;
+                localStorage.setItem('orders', JSON.stringify(orders));
+                renderOrders();
+            }
+        }
+
+        function renderOrders() {
+            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+            const ordersList = document.getElementById('ordersList');
+            
+            // Update stats
+            document.getElementById('totalOrders').textContent = orders.length;
+            document.getElementById('totalPoints').textContent = orders.reduce((sum, o) => sum + o.points, 0);
+            
+            if (orders.length === 0) {
+                ordersList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📦</div>
+                        <div class="empty-state-text">暂无订单 / No orders yet</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Add index to each order for status toggle
+            const ordersWithIndex = orders.map((order, index) => ({...order, originalIndex: index}));
+            
+            // Filter orders
+            let filteredOrders = ordersWithIndex;
+            if (currentFilter === 'pending') {
+                filteredOrders = ordersWithIndex.filter(o => !o.delivered);
+            } else if (currentFilter === 'delivered') {
+                filteredOrders = ordersWithIndex.filter(o => o.delivered);
+            }
+            
+            if (filteredOrders.length === 0) {
+                ordersList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📦</div>
+                        <div class="empty-state-text">没有符合条件的订单 / No matching orders</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Sort by newest first
+            filteredOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            ordersList.innerHTML = filteredOrders.map(order => {
+                const date = new Date(order.timestamp);
+                const timeStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+                const statusClass = order.delivered ? 'status-delivered' : 'status-pending';
+                const statusText = order.delivered ? '已分发 Delivered' : '待分发 Pending';
+                const toggleText = order.delivered ? '标记为待分发 Mark Pending' : '标记为已分发 Mark Delivered';
+                
+                return `
+                    <div class="order-card">
+                        <div class="order-header">
+                            <div>
+                                <div class="order-student">${order.studentName}</div>
+                                <div class="order-class">班级 Class: ${order.studentClass}</div>
+                            </div>
+                            <div class="order-time">${timeStr}</div>
+                        </div>
+                        <div class="order-details">
+                            <div class="order-gift">
+                                <div class="order-gift-name">${order.giftName}</div>
+                                <div class="order-variant">款式 Style: ${order.variant}</div>
+                            </div>
+                            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+                                <div class="order-points">${order.points} 积分 pts</div>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span class="status-badge ${statusClass}">${statusText}</span>
+                                    <button class="status-btn" onclick="toggleDeliveryStatus(${order.originalIndex})">${toggleText}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function clearOrders() {
+            if (confirm('确定要清空所有订单吗？此操作不可恢复！\nAre you sure? This cannot be undone!')) {
+                localStorage.removeItem('orders');
+                renderOrders();
+            }
+        }
+    </script>
+</body>
+</html>

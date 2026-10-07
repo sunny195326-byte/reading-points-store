@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小书虫商店</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        header .subtitle-en {
+            font-size: 1em;
+            opacity: 0.7;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        header .desc-en {
+            font-size: 0.85em;
+            opacity: 0.7;
+        }
+
+        .gifts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .gift-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+        }
+
+        .gift-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .gift-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            background: #f5f5f5;
+        }
+
+        .gift-info {
+            padding: 20px;
+        }
+
+        .gift-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .gift-name-en {
+            font-size: 0.75em;
+            color: #888;
+            font-weight: normal;
+            margin-bottom: 10px;
+        }
+
+        .gift-points {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-right: 10px;
+        }
+
+        .gift-stock {
+            display: inline-block;
+            background: #4caf50;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .gift-stock.low {
+            background: #ff9800;
+        }
+
+        .gift-stock.out {
+            background: #f44336;
+        }
+
+        .gift-card.out-of-stock {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .out-of-stock-badge {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(244, 67, 54, 0.9);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.5em;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .modal-image {
+            width: 100%;
+            height: 400px;
+            object-fit: contain;
+            background: #f5f5f5;
+        }
+
+        .modal-info {
+            padding: 30px;
+        }
+
+        .modal-name {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .modal-points {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group label:has(input[type="radio"]:checked) {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .variant-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .variant-btn {
+            padding: 10px 20px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1em;
+        }
+
+        .variant-btn:hover {
+            border-color: #667eea;
+        }
+
+        .variant-btn.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .submit-btn:hover {
+            transform: scale(1.02);
+        }
+
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+
+        .success-message {
+            display: none;
+            background: #4caf50;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .success-message.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .admin-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .admin-link a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 2px solid white;
+            border-radius: 25px;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+
+        .admin-link a:hover {
+            background: white;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 小书虫商店</h1>
+            <div class="subtitle-en">Reading Points Redemption Store</div>
+            <p>用你的阅读积分兑换精美礼物！</p>
+            <div class="desc-en">Redeem your reading points for wonderful gifts!</div>
+        </header>
+
+        <div class="gifts-grid" id="giftsGrid"></div>
+
+        <div class="admin-link">
+            <a href="admin.html">🔐 管理员登录 <span style="font-size:0.75em;opacity:0.8">Admin Login</span></a>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="giftModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <img class="modal-image" id="modalImage" src="" alt="">
+            <div class="modal-info">
+                <h2 class="modal-name" id="modalName"></h2>
+                <div class="modal-points" id="modalPoints"></div>
+                
+                <form id="purchaseForm">
+                    <div style="background: #fff3e0; padding: 15px; border-radius: 10px; margin-bottom: 20px; color: #e65100;">
+                        📦 款式随机发放，不可选择<br>
+                        <span style="font-size:0.8em;opacity:0.8">Random style, not selectable</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>班级 * <span style="font-size:0.75em;color:#888">Class</span></label>
+                        <input type="text" id="studentClass" required placeholder="例如：1CL1">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>姓名 * <span style="font-size:0.75em;color:#888">Name</span></label>
+                        <input type="text" id="studentName" required placeholder="请输入你的姓名 / Enter your name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>分发状态 * <span style="font-size:0.75em;color:#888">Delivery Status</span></label>
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                            <label style="flex:1;min-width:150px;padding:12px;border:2px solid #e0e0e0;border-radius:10px;cursor:pointer;transition:all 0.3s;" id="pendingLabel">
+                                <input type="radio" name="deliveryStatus" value="pending" checked style="margin-right:8px;">
+                                <strong>待分发</strong><br>
+                                <span style="font-size:0.8em;color:#888">Pending - 稍后领取</span>
+                            </label>
+                            <label style="flex:1;min-width:150px;padding:12px;border:2px solid #e0e0e0;border-radius:10px;cursor:pointer;transition:all 0.3s;" id="deliveredLabel">
+                                <input type="radio" name="deliveryStatus" value="delivered" style="margin-right:8px;">
+                                <strong>已分发</strong><br>
+                                <span style="font-size:0.8em;color:#888">Delivered - 当场领取</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="submit-btn">确认兑换 <span style="font-size:0.8em;opacity:0.8">Redeem</span></button>
+                    
+                    <div class="success-message" id="successMessage">
+                        ✓ 兑换成功！老师已收到你的订单<br>
+                        <span style="font-size:0.85em;opacity:0.9">Redeemed! Teacher received your order</span>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Gift data
+        const gifts = [
+            { id: 16, name: '贴纸（2张）',             nameEn: 'Sticker (2 pcs)',                         points: 1,  image: 'gifts/gift-16.png', stock: 50 },
+            { id: 5,  name: 'Deli铅笔（一支）',         nameEn: 'Deli Pencil (1 pc)',                     points: 2,  image: 'gifts/gift-5.png',  stock: 9 },
+            { id: 15, name: '动物橡皮（一块）',         nameEn: 'Animal Eraser (1 pc)',                   points: 2,  image: 'gifts/gift-15.png', stock: 40 },
+            { id: 14, name: '花样铅笔（一支）',         nameEn: 'Fancy Pencil (1 pc)',                    points: 3,  image: 'gifts/gift-14.png', stock: 70 },
+            { id: 17, name: '方形橡皮',                 nameEn: 'Square Eraser',                          points: 3,  image: 'gifts/gift-17.png', stock: 10 },
+            { id: 18, name: '钥匙扣',                   nameEn: 'Keychain',                               points: 3,  image: 'gifts/gift-18.png', stock: 13 },
+            { id: 13, name: '独角兽圆珠笔（一支）',     nameEn: 'Unicorn Ballpoint Pen (1 pc)',           points: 4,  image: 'gifts/gift-13.png', stock: 46 },
+            { id: 7,  name: '鲁班锁（球）一个',         nameEn: 'Puzzle Ball (1 pc)',                     points: 5,  image: 'gifts/gift-7.png',  stock: 9 },
+            { id: 6,  name: '陀螺（一个）',             nameEn: 'Spinning Top (1 pc)',                    points: 5,  image: 'gifts/gift-6.png',  stock: 5 },
+            { id: 10, name: '文件夹',                   nameEn: 'File Folder',                            points: 5,  image: 'gifts/gift-10.png', stock: 31 },
+            { id: 2,  name: '盲袋（一个）',             nameEn: 'Mystery Bag (1 pc)',                     points: 5,  image: 'gifts/gift-2.png',  stock: 30 },
+            { id: 11, name: '笔记本+钥匙扣（一套）',    nameEn: 'Notebook + Keychain Set',                points: 5,  image: 'gifts/gift-11.png', stock: 15 },
+            { id: 12, name: '笔记本+尺+刮画纸（一套）', nameEn: 'Notebook + Ruler + Scratch Paper Set',   points: 5,  image: 'gifts/gift-12.png', stock: 4 },
+            { id: 1,  name: '绘画本（一本）',           nameEn: 'Drawing Book (1 pc)',                    points: 8,  image: 'gifts/gift-1.png',  stock: 8 },
+            { id: 4,  name: '笔袋A6',                   nameEn: 'Pencil Case A6',                         points: 10, image: 'gifts/gift-4.png',  stock: 4 },
+            { id: 8,  name: '小拉布布娃娃（一个）',     nameEn: 'Mini Labubu (1 pc)',                     points: 10, image: 'gifts/gift-8.png',  stock: 10 },
+            { id: 3,  name: '笔袋A5',                   nameEn: 'Pencil Case A5',                         points: 12, image: 'gifts/gift-3.png',  stock: 5 },
+            { id: 9,  name: '扇子',                     nameEn: 'Fan',                                    points: 20, image: 'gifts/gift-9.png',  stock: 14 }
+        ];
+
+        let selectedGift = null;
+
+        // Render gifts grid
+        function renderGifts() {
+            const grid = document.getElementById('giftsGrid');
+            grid.innerHTML = gifts.map(gift => {
+                const isOutOfStock = gift.stock <= 0;
+                const stockClass = isOutOfStock ? 'out' : (gift.stock <= 3 ? 'low' : '');
+                const cardClass = isOutOfStock ? 'out-of-stock' : '';
+                const stockText = isOutOfStock ? '缺货 Out of Stock' : `库存 Stock: ${gift.stock}`;
+                
+                return `
+                    <div class="gift-card ${cardClass}" onclick="${isOutOfStock ? '' : `openModal(${gift.id})`}">
+                        ${isOutOfStock ? '<div class="out-of-stock-badge">Out of Stock</div>' : ''}
+                        <img class="gift-image" src="${gift.image}" alt="${gift.name}">
+                        <div class="gift-info">
+                            <div class="gift-name">${gift.name}</div>
+                            <div class="gift-name-en">${gift.nameEn}</div>
+                            <div class="gift-points">${gift.points} 积分 pts</div>
+                            <div class="gift-stock ${stockClass}">${stockText}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Open modal
+        function openModal(giftId) {
+            selectedGift = gifts.find(g => g.id === giftId);
+            
+            document.getElementById('modalImage').src = selectedGift.image;
+            document.getElementById('modalName').innerHTML = `${selectedGift.name} <span style="font-size:0.6em;color:#888;font-weight:normal">${selectedGift.nameEn}</span>`;
+            document.getElementById('modalPoints').textContent = `${selectedGift.points} 积分 Points`;
+            
+            // Reset form
+            document.getElementById('purchaseForm').reset();
+            document.getElementById('successMessage').classList.remove('show');
+            
+            document.getElementById('giftModal').classList.add('active');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('giftModal').classList.remove('active');
+        }
+
+        // Handle form submission
+        document.getElementById('purchaseForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const studentClass = document.getElementById('studentClass').value;
+            const studentName = document.getElementById('studentName').value;
+            const deliveryStatus = document.querySelector('input[name="deliveryStatus"]:checked').value;
+            
+            // Check stock
+            if (selectedGift.stock <= 0) {
+                alert('抱歉，该礼物已售罄\nSorry, this gift is out of stock');
+                closeModal();
+                return;
+            }
+            
+            // Save order to localStorage
+            const order = {
+                giftId: selectedGift.id,
+                giftName: selectedGift.name,
+                variant: '随机',
+                points: selectedGift.points,
+                studentClass: studentClass,
+                studentName: studentName,
+                delivered: deliveryStatus === 'delivered',
+                timestamp: new Date().toISOString()
+            };
+            
+            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+            orders.push(order);
+            localStorage.setItem('orders', JSON.stringify(orders));
+            
+            // Decrease stock
+            selectedGift.stock--;
+            const giftsStorage = JSON.parse(localStorage.getItem('gifts') || '[]');
+            const giftIndex = giftsStorage.findIndex(g => g.id === selectedGift.id);
+            if (giftIndex >= 0) {
+                giftsStorage[giftIndex].stock = selectedGift.stock;
+            } else {
+                giftsStorage.push({id: selectedGift.id, stock: selectedGift.stock});
+            }
+            localStorage.setItem('gifts', JSON.stringify(giftsStorage));
+            
+            // Show success message
+            document.getElementById('successMessage').classList.add('show');
+            
+            // Reset form after 2 seconds
+            setTimeout(() => {
+                closeModal();
+                renderGifts();
+            }, 2000);
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('giftModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Initialize
+        function init() {
+            // Load stock from localStorage
+            const giftsStorage = JSON.parse(localStorage.getItem('gifts') || '[]');
+            giftsStorage.forEach(stored => {
+                const gift = gifts.find(g => g.id === stored.id);
+                if (gift) {
+                    gift.stock = stored.stock;
+                }
+            });
+            renderGifts();
+        }
+        init();
+    </script>
+</body>
+</html>
