@@ -423,9 +423,24 @@
         </div>
     </div>
 
-    <script>
-        // Gift data
-        const gifts = [
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCPTtCKWTR3BzcyCQbO8f78CbYZwDujRvA",
+            authDomain: "reading-points-store.firebaseapp.com",
+            projectId: "reading-points-store",
+            storageBucket: "reading-points-store.firebasestorage.app",
+            messagingSenderId: "128567603526",
+            appId: "1:128567603526:web:652f149c00dca7814c7547"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Default gift data (used for initial setup)
+        const defaultGifts = [
             { id: 16, name: '贴纸（2张）',             nameEn: 'Sticker (2 pcs)',                         points: 1,  image: 'gifts/gift-16.png', stock: 50 },
             { id: 5,  name: 'Deli铅笔（一支）',         nameEn: 'Deli Pencil (1 pc)',                     points: 2,  image: 'gifts/gift-5.png',  stock: 9 },
             { id: 15, name: '动物橡皮（一块）',         nameEn: 'Animal Eraser (1 pc)',                   points: 2,  image: 'gifts/gift-15.png', stock: 40 },
@@ -446,7 +461,27 @@
             { id: 9,  name: '扇子',                     nameEn: 'Fan',                                    points: 20, image: 'gifts/gift-9.png',  stock: 14 }
         ];
 
+        let gifts = [];
         let selectedGift = null;
+
+        // Initialize Firestore with default data if empty
+        async function initFirestore() {
+            const giftsCol = collection(db, 'gifts');
+            const firstDoc = await getDoc(doc(db, 'gifts', '16'));
+            if (!firstDoc.exists()) {
+                for (const gift of defaultGifts) {
+                    await setDoc(doc(db, 'gifts', String(gift.id)), gift);
+                }
+            }
+        }
+
+        // Listen for real-time gift updates
+        function listenToGifts() {
+            onSnapshot(collection(db, 'gifts'), (snapshot) => {
+                gifts = snapshot.docs.map(d => d.data()).sort((a, b) => a.points - b.points);
+                renderGifts();
+            });
+        }
 
         // Render gifts grid
         function renderGifts() {
@@ -473,75 +508,87 @@
         }
 
         // Open modal
-        function openModal(giftId) {
+        window.openModal = function(giftId) {
             selectedGift = gifts.find(g => g.id === giftId);
+            if (!selectedGift) return;
             
             document.getElementById('modalImage').src = selectedGift.image;
             document.getElementById('modalName').innerHTML = `${selectedGift.name} <span style="font-size:0.6em;color:#888;font-weight:normal">${selectedGift.nameEn}</span>`;
             document.getElementById('modalPoints').textContent = `${selectedGift.points} 积分 Points`;
             
-            // Reset form
             document.getElementById('purchaseForm').reset();
             document.getElementById('successMessage').classList.remove('show');
-            
             document.getElementById('giftModal').classList.add('active');
-        }
+        };
 
         // Close modal
-        function closeModal() {
+        window.closeModal = function() {
             document.getElementById('giftModal').classList.remove('active');
-        }
+        };
 
         // Handle form submission
-        document.getElementById('purchaseForm').addEventListener('submit', function(e) {
+        document.getElementById('purchaseForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            if (!selectedGift) return;
             
             const studentClass = document.getElementById('studentClass').value;
             const studentName = document.getElementById('studentName').value;
             const deliveryStatus = document.querySelector('input[name="deliveryStatus"]:checked').value;
             
-            // Check stock
             if (selectedGift.stock <= 0) {
                 alert('抱歉，该礼物已售罄\nSorry, this gift is out of stock');
                 closeModal();
                 return;
             }
             
-            // Save order to localStorage
-            const order = {
-                giftId: selectedGift.id,
-                giftName: selectedGift.name,
-                variant: '随机',
-                points: selectedGift.points,
-                studentClass: studentClass,
-                studentName: studentName,
-                delivered: deliveryStatus === 'delivered',
-                timestamp: new Date().toISOString()
-            };
+            const submitBtn = document.querySelector('.submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '处理中...';
             
-            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-            orders.push(order);
-            localStorage.setItem('orders', JSON.stringify(orders));
-            
-            // Decrease stock
-            selectedGift.stock--;
-            const giftsStorage = JSON.parse(localStorage.getItem('gifts') || '[]');
-            const giftIndex = giftsStorage.findIndex(g => g.id === selectedGift.id);
-            if (giftIndex >= 0) {
-                giftsStorage[giftIndex].stock = selectedGift.stock;
-            } else {
-                giftsStorage.push({id: selectedGift.id, stock: selectedGift.stock});
+            try {
+                const giftRef = doc(db, 'gifts', String(selectedGift.id));
+                
+                await runTransaction(db, async (transaction) => {
+                    const giftSnap = await transaction.get(giftRef);
+                    const currentStock = giftSnap.data().stock;
+                    
+                    if (currentStock <= 0) {
+                        throw new Error('Out of stock');
+                    }
+                    
+                    transaction.update(giftRef, { stock: currentStock - 1 });
+                    
+                    const ordersCol = collection(db, 'orders');
+                    const newOrderRef = doc(ordersCol);
+                    transaction.set(newOrderRef, {
+                        giftId: selectedGift.id,
+                        giftName: selectedGift.name,
+                        variant: '随机',
+                        points: selectedGift.points,
+                        studentClass: studentClass,
+                        studentName: studentName,
+                        delivered: deliveryStatus === 'delivered',
+                        timestamp: serverTimestamp()
+                    });
+                });
+                
+                document.getElementById('successMessage').classList.add('show');
+                
+                setTimeout(() => {
+                    closeModal();
+                }, 2000);
+            } catch (err) {
+                if (err.message === 'Out of stock') {
+                    alert('抱歉，该礼物已售罄\nSorry, this gift is out of stock');
+                } else {
+                    alert('兑换失败，请重试\nRedemption failed, please try again');
+                    console.error(err);
+                }
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '确认兑换 <span style="font-size:0.8em;opacity:0.8">Redeem</span>';
             }
-            localStorage.setItem('gifts', JSON.stringify(giftsStorage));
-            
-            // Show success message
-            document.getElementById('successMessage').classList.add('show');
-            
-            // Reset form after 2 seconds
-            setTimeout(() => {
-                closeModal();
-                renderGifts();
-            }, 2000);
         });
 
         // Close modal when clicking outside
@@ -551,19 +598,9 @@
             }
         });
 
-        // Initialize
-        function init() {
-            // Load stock from localStorage
-            const giftsStorage = JSON.parse(localStorage.getItem('gifts') || '[]');
-            giftsStorage.forEach(stored => {
-                const gift = gifts.find(g => g.id === stored.id);
-                if (gift) {
-                    gift.stock = stored.stock;
-                }
-            });
-            renderGifts();
-        }
-        init();
+        // Start
+        await initFirestore();
+        listenToGifts();
     </script>
 </body>
 </html>
