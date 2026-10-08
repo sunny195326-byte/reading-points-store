@@ -425,7 +425,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, onSnapshot, runTransaction, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCPTtCKWTR3BzcyCQbO8f78CbYZwDujRvA",
@@ -466,14 +466,23 @@
         let gifts = [];
         let selectedGift = null;
 
-        // Initialize Firestore - add any missing gifts
+        // Initialize Firestore - add any missing gifts (efficient batch check)
         async function initFirestore() {
-            for (const gift of defaultGifts) {
-                const giftRef = doc(db, 'gifts', String(gift.id));
-                const giftSnap = await getDoc(giftRef);
-                if (!giftSnap.exists()) {
-                    await setDoc(giftRef, gift);
+            try {
+                const snapshot = await getDocs(collection(db, 'gifts'));
+                const existingIds = new Set(snapshot.docs.map(d => String(d.data().id)));
+                
+                const missingGifts = defaultGifts.filter(g => !existingIds.has(String(g.id)));
+                
+                if (missingGifts.length > 0) {
+                    const batch = writeBatch(db);
+                    for (const gift of missingGifts) {
+                        batch.set(doc(db, 'gifts', String(gift.id)), gift);
+                    }
+                    await batch.commit();
                 }
+            } catch (err) {
+                console.error('Init error:', err);
             }
         }
 
