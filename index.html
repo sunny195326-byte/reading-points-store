@@ -466,13 +466,13 @@
         let gifts = [];
         let selectedGift = null;
 
-        // Initialize Firestore with default data if empty
+        // Initialize Firestore - add any missing gifts
         async function initFirestore() {
-            const giftsCol = collection(db, 'gifts');
-            const firstDoc = await getDoc(doc(db, 'gifts', '16'));
-            if (!firstDoc.exists()) {
-                for (const gift of defaultGifts) {
-                    await setDoc(doc(db, 'gifts', String(gift.id)), gift);
+            for (const gift of defaultGifts) {
+                const giftRef = doc(db, 'gifts', String(gift.id));
+                const giftSnap = await getDoc(giftRef);
+                if (!giftSnap.exists()) {
+                    await setDoc(giftRef, gift);
                 }
             }
         }
