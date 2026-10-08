@@ -377,7 +377,10 @@
         <div class="orders-section">
             <div class="orders-header">
                 <h2>订单列表 <span style="font-size:0.7em;color:#888;font-weight:normal">Order List</span></h2>
-                <button class="clear-btn" onclick="clearOrders()">清空所有订单 Clear All</button>
+                <div style="display:flex;gap:10px;">
+                    <button class="clear-btn" style="background:#4caf50;" onclick="downloadOrders()">下载订单 Download</button>
+                    <button class="clear-btn" onclick="clearOrders()">清空所有订单 Clear All</button>
+                </div>
             </div>
             <div class="filter-btns">
                 <button class="filter-btn active" onclick="filterOrders('all', this)">全部 All</button>
@@ -588,6 +591,66 @@
                 `;
             }).join('');
         }
+
+        window.downloadOrders = function() {
+            if (orders.length === 0) {
+                alert('没有订单可以下载\nNo orders to download');
+                return;
+            }
+            
+            // Create CSV content with BOM for Excel Chinese support
+            let csv = '\uFEFF'; // BOM for UTF-8
+            csv += '序号,时间,班级,姓名,礼物名称,分值,分发状态\n';
+            
+            // Sort by newest first
+            const sortedOrders = [...orders].sort((a, b) => {
+                const tA = a.timestamp ? a.timestamp.toMillis() : 0;
+                const tB = b.timestamp ? b.timestamp.toMillis() : 0;
+                return tB - tA;
+            });
+            
+            sortedOrders.forEach((order, index) => {
+                let timeStr = '';
+                if (order.timestamp) {
+                    const date = order.timestamp.toDate();
+                    timeStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}:${String(date.getSeconds()).padStart(2,'0')}`;
+                }
+                const statusText = order.delivered ? '已分发' : '待分发';
+                
+                // Escape CSV fields
+                const fields = [
+                    index + 1,
+                    timeStr,
+                    order.studentClass || '',
+                    order.studentName || '',
+                    order.giftName || '',
+                    order.points || 0,
+                    statusText
+                ].map(field => {
+                    const str = String(field);
+                    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                        return '"' + str.replace(/"/g, '""') + '"';
+                    }
+                    return str;
+                });
+                
+                csv += fields.join(',') + '\n';
+            });
+            
+            // Create download link
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            const now = new Date();
+            const filename = `订单_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}.csv`;
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
 
         window.clearOrders = async function() {
             if (confirm('确定要清空所有订单吗？此操作不可恢复！\nAre you sure? This cannot be undone!')) {
