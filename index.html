@@ -353,6 +353,63 @@
             background: white;
             color: #667eea;
         }
+
+        /* Quantity Selector */
+        .quantity-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .quantity-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .quantity-btn:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .quantity-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .quantity-input {
+            width: 60px;
+            text-align: center;
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .quantity-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .total-points {
+            margin-top: 10px;
+            padding: 10px 15px;
+            background: #f0f4ff;
+            border-radius: 10px;
+            font-size: 1em;
+            color: #667eea;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -384,6 +441,19 @@
                     <div style="background: #fff3e0; padding: 15px; border-radius: 10px; margin-bottom: 20px; color: #e65100;">
                         📦 款式随机发放，不可选择<br>
                         <span style="font-size:0.8em;opacity:0.8">Random style, not selectable</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>兑换数量 * <span style="font-size:0.75em;color:#888">Quantity</span></label>
+                        <div class="quantity-group">
+                            <button type="button" class="quantity-btn" id="quantityMinus" onclick="changeQuantity(-1)">−</button>
+                            <input type="number" class="quantity-input" id="quantity" value="1" min="1" readonly>
+                            <button type="button" class="quantity-btn" id="quantityPlus" onclick="changeQuantity(1)">+</button>
+                            <span style="color:#888;font-size:0.9em;">（库存 <span id="maxStock">0</span>）</span>
+                        </div>
+                        <div class="total-points" id="totalPoints">
+                            总积分 Total: <span id="totalPointsValue">0</span> 积分 pts
+                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -466,6 +536,38 @@
         let gifts = [];
         let selectedGift = null;
 
+        // Change quantity
+        window.changeQuantity = function(delta) {
+            const quantityInput = document.getElementById('quantity');
+            let currentQty = parseInt(quantityInput.value) || 1;
+            const maxQty = selectedGift ? selectedGift.stock : 1;
+            
+            currentQty += delta;
+            if (currentQty < 1) currentQty = 1;
+            if (currentQty > maxQty) currentQty = maxQty;
+            
+            quantityInput.value = currentQty;
+            updateTotalPoints();
+            updateQuantityButtons();
+        };
+
+        // Update total points display
+        function updateTotalPoints() {
+            if (!selectedGift) return;
+            const quantity = parseInt(document.getElementById('quantity').value) || 1;
+            const total = selectedGift.points * quantity;
+            document.getElementById('totalPointsValue').textContent = total;
+        }
+
+        // Update quantity buttons state
+        function updateQuantityButtons() {
+            const quantity = parseInt(document.getElementById('quantity').value) || 1;
+            const maxQty = selectedGift ? selectedGift.stock : 1;
+            
+            document.getElementById('quantityMinus').disabled = quantity <= 1;
+            document.getElementById('quantityPlus').disabled = quantity >= maxQty;
+        }
+
         // Initialize Firestore - add any missing gifts (efficient batch check)
         async function initFirestore() {
             try {
@@ -527,7 +629,17 @@
             document.getElementById('modalName').innerHTML = `${selectedGift.name} <span style="font-size:0.6em;color:#888;font-weight:normal">${selectedGift.nameEn}</span>`;
             document.getElementById('modalPoints').textContent = `${selectedGift.points} 积分 Points`;
             
+            // Reset quantity
+            document.getElementById('quantity').value = 1;
+            document.getElementById('maxStock').textContent = selectedGift.stock;
+            updateTotalPoints();
+            updateQuantityButtons();
+            
             document.getElementById('purchaseForm').reset();
+            document.getElementById('quantity').value = 1;  // Reset again after form reset
+            updateTotalPoints();
+            updateQuantityButtons();
+            
             document.getElementById('successMessage').classList.remove('show');
             document.getElementById('giftModal').classList.add('active');
         };
@@ -546,10 +658,16 @@
             const studentClass = document.getElementById('studentClass').value;
             const studentName = document.getElementById('studentName').value;
             const deliveryStatus = document.querySelector('input[name="deliveryStatus"]:checked').value;
+            const quantity = parseInt(document.getElementById('quantity').value) || 1;
             
             if (selectedGift.stock <= 0) {
                 alert('抱歉，该礼物已售罄\nSorry, this gift is out of stock');
                 closeModal();
+                return;
+            }
+            
+            if (quantity > selectedGift.stock) {
+                alert(`抱歉，库存不足。当前库存: ${selectedGift.stock}\nSorry, not enough stock. Current stock: ${selectedGift.stock}`);
                 return;
             }
             
@@ -564,11 +682,11 @@
                     const giftSnap = await transaction.get(giftRef);
                     const currentStock = giftSnap.data().stock;
                     
-                    if (currentStock <= 0) {
+                    if (currentStock < quantity) {
                         throw new Error('Out of stock');
                     }
                     
-                    transaction.update(giftRef, { stock: currentStock - 1 });
+                    transaction.update(giftRef, { stock: currentStock - quantity });
                     
                     const ordersCol = collection(db, 'orders');
                     const newOrderRef = doc(ordersCol);
@@ -577,6 +695,8 @@
                         giftName: selectedGift.name,
                         variant: '随机',
                         points: selectedGift.points,
+                        quantity: quantity,
+                        totalPoints: selectedGift.points * quantity,
                         studentClass: studentClass,
                         studentName: studentName,
                         delivered: deliveryStatus === 'delivered',
@@ -591,7 +711,7 @@
                 }, 2000);
             } catch (err) {
                 if (err.message === 'Out of stock') {
-                    alert('抱歉，该礼物已售罄\nSorry, this gift is out of stock');
+                    alert('抱歉，库存不足\nSorry, not enough stock');
                 } else {
                     alert('兑换失败，请重试\nRedemption failed, please try again');
                     console.error(err);
