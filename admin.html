@@ -518,7 +518,7 @@
             
             // Update stats
             document.getElementById('totalOrders').textContent = orders.length;
-            document.getElementById('totalPoints').textContent = orders.reduce((sum, o) => sum + (o.points || 0), 0);
+            document.getElementById('totalPoints').textContent = orders.reduce((sum, o) => sum + (o.totalPoints || (o.points || 0) * (o.quantity || 1)), 0);
             
             if (orders.length === 0) {
                 ordersList.innerHTML = `
@@ -577,10 +577,11 @@
                         <div class="order-details">
                             <div class="order-gift">
                                 <div class="order-gift-name">${order.giftName}</div>
-                                <div class="order-variant">款式 Style: ${order.variant}</div>
+                                <div class="order-variant">款式 Style: ${order.variant} | 数量 Qty: ${order.quantity || 1}</div>
                             </div>
                             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
-                                <div class="order-points">${order.points} 积分 pts</div>
+                                <div class="order-points">${order.totalPoints || (order.points || 0) * (order.quantity || 1)} 积分 pts</div>
+                                ${order.quantity && order.quantity > 1 ? `<div style="font-size:0.8em;color:#888;">(单价 ${order.points} × ${order.quantity})</div>` : ''}
                                 <div style="display:flex;align-items:center;gap:8px;">
                                     <span class="status-badge ${statusClass}">${statusText}</span>
                                     <button class="status-btn" onclick="toggleDeliveryStatus('${order.docId}')">${toggleText}</button>
@@ -600,7 +601,7 @@
             
             // Create CSV content with BOM for Excel Chinese support
             let csv = '\uFEFF'; // BOM for UTF-8
-            csv += '序号,时间,班级,姓名,礼物名称,分值,分发状态\n';
+            csv += '序号,时间,班级,姓名,礼物名称,单价,数量,总积分,分发状态\n';
             
             // Sort by newest first
             const sortedOrders = [...orders].sort((a, b) => {
@@ -625,6 +626,8 @@
                     order.studentName || '',
                     order.giftName || '',
                     order.points || 0,
+                    order.quantity || 1,
+                    order.totalPoints || (order.points || 0) * (order.quantity || 1),
                     statusText
                 ].map(field => {
                     const str = String(field);
